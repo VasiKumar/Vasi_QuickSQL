@@ -18,7 +18,8 @@ import {
   Eye,
   User,
   Key,
-  Keyboard
+  Keyboard,
+  Smartphone
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -40,6 +41,7 @@ interface HeaderProps {
   onOpenProfile: () => void;
   isFocusMode: boolean;
   onToggleFocusMode: () => void;
+  onOpenInstallModal?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -60,7 +62,8 @@ export const Header: React.FC<HeaderProps> = ({
   onAiClick,
   onOpenProfile,
   isFocusMode,
-  onToggleFocusMode
+  onToggleFocusMode,
+  onOpenInstallModal
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [dotsMenuOpen, setDotsMenuOpen] = useState(false);
@@ -182,6 +185,18 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
+          {/* Install / APK button */}
+          {onOpenInstallModal && (
+            <button
+              onClick={onOpenInstallModal}
+              className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-emerald-500/40 bg-emerald-50/60 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors whitespace-nowrap"
+              title="Install QuickSQL App or Package Android APK"
+            >
+              <Smartphone className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>App / APK</span>
+            </button>
+          )}
+
           {/* Hide / Focus Mode Toggle */}
           <button
             onClick={onToggleFocusMode}
@@ -249,6 +264,22 @@ export const Header: React.FC<HeaderProps> = ({
                 </button>
 
                 <div className="h-px bg-neutral-100 dark:bg-neutral-800 my-1" />
+
+                {onOpenInstallModal && (
+                  <button
+                    onClick={() => {
+                      setDotsMenuOpen(false);
+                      onOpenInstallModal();
+                    }}
+                    className="w-full px-3 py-2 text-left flex items-center gap-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-800 dark:text-neutral-200"
+                  >
+                    <Smartphone className="w-4 h-4 text-emerald-600" />
+                    <div className="flex flex-col">
+                      <span className="font-medium">Install App / APK</span>
+                      <span className="text-[10px] text-neutral-400">Android WebAPK & PWABuilder package</span>
+                    </div>
+                  </button>
+                )}
 
                 <button
                   onClick={() => {
@@ -331,27 +362,42 @@ export const Header: React.FC<HeaderProps> = ({
             })}
           </div>
 
-          <div className="flex items-center justify-between gap-2 pt-1 text-xs">
-            <button
-              onClick={() => {
-                onOpenProfile();
-                setMobileMenuOpen(false);
-              }}
-              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 border border-neutral-300 dark:border-neutral-700 rounded-lg text-neutral-700 dark:text-neutral-300"
-            >
-              <User className="w-3.5 h-3.5 text-amber-500" />
-              <span>Profile / Keys</span>
-            </button>
-            <button
-              onClick={() => {
-                onOpenDatasets();
-                setMobileMenuOpen(false);
-              }}
-              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 border border-neutral-300 dark:border-neutral-700 rounded-lg text-neutral-700 dark:text-neutral-300"
-            >
-              <FolderDown className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Demo Data</span>
-            </button>
+          <div className="flex flex-col gap-2 pt-1 text-xs">
+            {onOpenInstallModal && (
+              <button
+                onClick={() => {
+                  onOpenInstallModal();
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center justify-center gap-1.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-lg shadow-xs"
+              >
+                <Smartphone className="w-3.5 h-3.5" />
+                <span>Install Mobile App / APK</span>
+              </button>
+            )}
+
+            <div className="flex items-center justify-between gap-2">
+              <button
+                onClick={() => {
+                  onOpenProfile();
+                  setMobileMenuOpen(false);
+                }}
+                className="flex-1 flex items-center justify-center gap-1.5 py-1.5 border border-neutral-300 dark:border-neutral-700 rounded-lg text-neutral-700 dark:text-neutral-300"
+              >
+                <User className="w-3.5 h-3.5 text-amber-500" />
+                <span>Profile / Keys</span>
+              </button>
+              <button
+                onClick={() => {
+                  onOpenDatasets();
+                  setMobileMenuOpen(false);
+                }}
+                className="flex-1 flex items-center justify-center gap-1.5 py-1.5 border border-neutral-300 dark:border-neutral-700 rounded-lg text-neutral-700 dark:text-neutral-300"
+              >
+                <FolderDown className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Demo Data</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

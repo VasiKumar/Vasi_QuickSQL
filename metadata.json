@@ -1,6 +1,6 @@
 {
-  "name": "SQL Studio Lite",
-  "description": "Ultra-lightweight SQL and PostgreSQL query runner with in-browser execution, sample datasets, query saving, history, and bring-your-own-key Groq AI assistant.",
+  "name": "QuickSQL",
+  "description": "QuickSQL is a light, fast, and smooth SQL and PostgreSQL query runner with in-browser execution, tables and attributes inspector, query history, and AI assistance.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

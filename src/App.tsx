@@ -11,6 +11,7 @@ import { AiAssistantDrawer } from './components/AiAssistantDrawer';
 import { ContextPinModal } from './components/ContextPinModal';
 import { ProfileModal } from './components/ProfileModal';
 import { GroqSetupModal } from './components/GroqSetupModal';
+import { InstallApkModal } from './components/InstallApkModal';
 import { sqlEngine } from './services/sqlEngine';
 import { historyStorage } from './services/historyStorage';
 import { savedQueriesStorage } from './services/savedQueriesStorage';
@@ -107,6 +108,7 @@ export default function App() {
   const [isPinModalOpen, setIsPinModalOpen] = useState<boolean>(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
   const [isGroqSetupModalOpen, setIsGroqSetupModalOpen] = useState<boolean>(false);
+  const [isInstallModalOpen, setIsInstallModalOpen] = useState<boolean>(false);
   const [errorToDiagnose, setErrorToDiagnose] = useState<{ error: string; sql: string } | null>(null);
 
   // AI Attached Contexts
@@ -468,6 +470,7 @@ export default function App() {
           onOpenProfile={() => setIsProfileModalOpen(true)}
           isFocusMode={isFocusMode}
           onToggleFocusMode={() => setIsFocusMode(true)}
+          onOpenInstallModal={() => setIsInstallModalOpen(true)}
         />
       )}
 
@@ -902,6 +905,12 @@ export default function App() {
         onConfigUpdated={() => {
           setHasGroqKey(!!groqService.getConfig().apiKey);
         }}
+      />
+
+      {/* Android WebAPK & Standalone App Installation Modal */}
+      <InstallApkModal
+        isOpen={isInstallModalOpen}
+        onClose={() => setIsInstallModalOpen(false)}
       />
     </div>
   );
