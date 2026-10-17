@@ -64,6 +64,17 @@ export default function App() {
   const [workspaceLayout, setWorkspaceLayout] = useState<'split' | 'editor-fullscreen' | 'output-fullscreen' | 'output-minimized'>('split');
   const [isFocusMode, setIsFocusMode] = useState<boolean>(false);
 
+  // SQL Syntax Highlighting (VS Code color formatting)
+  const [syntaxHighlighting, setSyntaxHighlighting] = useState<boolean>(() => {
+    const saved = localStorage.getItem('quicksql_syntax_highlighting');
+    return saved !== null ? saved === 'true' : true;
+  });
+
+  const handleToggleSyntaxHighlighting = (val: boolean) => {
+    setSyntaxHighlighting(val);
+    localStorage.setItem('quicksql_syntax_highlighting', String(val));
+  };
+
   // Escape key restores split workspace layout
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -545,6 +556,8 @@ export default function App() {
                     setActiveView(prev => prev === 'schema' ? 'editor' : 'schema');
                   }}
                   isFocusMode={isFocusMode}
+                  syntaxHighlighting={syntaxHighlighting}
+                  onToggleSyntaxHighlighting={handleToggleSyntaxHighlighting}
                 />
 
                 {/* Status Hint Bar when Query Writing Space is Full Screen */}
@@ -905,6 +918,8 @@ export default function App() {
         onConfigUpdated={() => {
           setHasGroqKey(!!groqService.getConfig().apiKey);
         }}
+        syntaxHighlighting={syntaxHighlighting}
+        onToggleSyntaxHighlighting={handleToggleSyntaxHighlighting}
       />
 
       {/* Android WebAPK & Standalone App Installation Modal */}

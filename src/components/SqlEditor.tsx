@@ -17,7 +17,8 @@ import {
   Minimize2,
   Database,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Palette
 } from 'lucide-react';
 import { EditorTab } from '../types';
 
@@ -39,12 +40,114 @@ interface SqlEditorProps {
   onToggleSchema?: () => void;
   isSchemaOpen?: boolean;
   isFocusMode?: boolean;
+  syntaxHighlighting?: boolean;
+  onToggleSyntaxHighlighting?: (val: boolean) => void;
 }
 
 const COMMON_SQL_KEYWORDS = [
   'SELECT', 'FROM', 'WHERE', 'JOIN', 'LEFT JOIN', 'ON', 
   'GROUP BY', 'ORDER BY', 'LIMIT 10', 'AND', '*', ';'
 ];
+
+// VS Code SQL Syntax Keywords
+const SQL_KEYWORDS = new Set([
+  'SELECT', 'DISTINCT', 'FROM', 'WHERE', 'AND', 'OR', 'NOT', 'IN', 'IS', 'NULL',
+  'LIKE', 'ILIKE', 'BETWEEN', 'EXISTS', 'ALL', 'ANY', 'SOME', 'UNION', 'INTERSECT', 'EXCEPT',
+  'JOIN', 'INNER', 'LEFT', 'RIGHT', 'FULL', 'OUTER', 'CROSS', 'ON', 'USING',
+  'GROUP', 'BY', 'HAVING', 'ORDER', 'ASC', 'DESC', 'LIMIT', 'OFFSET',
+  'INSERT', 'INTO', 'VALUES', 'UPDATE', 'SET', 'DELETE',
+  'CREATE', 'ALTER', 'DROP', 'TRUNCATE', 'TABLE', 'VIEW', 'INDEX', 'SCHEMA', 'DATABASE',
+  'PRIMARY', 'KEY', 'FOREIGN', 'REFERENCES', 'CHECK', 'UNIQUE', 'CONSTRAINT', 'DEFAULT',
+  'CASE', 'WHEN', 'THEN', 'ELSE', 'END', 'AS', 'WITH', 'RECURSIVE',
+  'CASCADE', 'RESTRICT', 'ADD', 'COLUMN', 'TRUE', 'FALSE'
+]);
+
+// VS Code SQL Data Types
+const SQL_TYPES = new Set([
+  'INT', 'INTEGER', 'BIGINT', 'SMALLINT', 'TINYINT', 'SERIAL', 'BIGSERIAL',
+  'VARCHAR', 'CHAR', 'TEXT', 'STRING', 'CLOB',
+  'BOOLEAN', 'BOOL',
+  'DATE', 'TIME', 'TIMESTAMP', 'TIMESTAMPTZ', 'INTERVAL',
+  'DECIMAL', 'NUMERIC', 'FLOAT', 'DOUBLE', 'REAL',
+  'JSON', 'JSONB', 'UUID', 'BLOB', 'BYTEA', 'ARRAY'
+]);
+
+// VS Code SQL Functions
+const SQL_FUNCTIONS = new Set([
+  'COUNT', 'SUM', 'AVG', 'MIN', 'MAX',
+  'COALESCE', 'NULLIF', 'NOW', 'CURRENT_DATE', 'CURRENT_TIME', 'CURRENT_TIMESTAMP',
+  'CONCAT', 'SUBSTRING', 'SUBSTR', 'LENGTH', 'LOWER', 'UPPER', 'TRIM', 'LTRIM', 'RTRIM', 'REPLACE',
+  'ROUND', 'FLOOR', 'CEIL', 'CEILING', 'ABS', 'MOD', 'POWER', 'SQRT',
+  'DATE_TRUNC', 'EXTRACT', 'AGE', 'TO_CHAR', 'TO_DATE', 'TO_TIMESTAMP', 'CAST'
+]);
+
+function highlightSqlToReact(sql: string) {
+  if (!sql) return null;
+  const regex = /(--[^\n]*|\/\*[\s\S]*?\*\/|'(?:''|[^'])*'|"(?:""|[^"])*"|\b\d+(?:\.\d+)?\b|[a-zA-Z_][a-zA-Z0-9_]*|<=|>=|<>|!=|[-+*/%=<>(),;]|\s+|.)/g;
+  const tokens = sql.match(regex) || [sql];
+
+  return tokens.map((token, index) => {
+    // Comments -> VS Code Green italic (#6a9955)
+    if (token.startsWith('--') || token.startsWith('/*')) {
+      return (
+        <span key={index} className="text-[#6a9955] italic font-normal">
+          {token}
+        </span>
+      );
+    }
+    // Strings -> VS Code Orange / Coral (#ce9178 in dark, #a31515 in light)
+    if (token.startsWith("'") || token.startsWith('"')) {
+      return (
+        <span key={index} className="text-[#a31515] dark:text-[#ce9178]">
+          {token}
+        </span>
+      );
+    }
+    // Numbers -> VS Code Light Green (#b5cea8 in dark, #098658 in light)
+    if (/^\d+(\.\d+)?$/.test(token)) {
+      return (
+        <span key={index} className="text-[#098658] dark:text-[#b5cea8]">
+          {token}
+        </span>
+      );
+    }
+    const upper = token.toUpperCase();
+    // Keywords -> VS Code Blue (#569cd6 in dark, #0000ff in light)
+    if (SQL_KEYWORDS.has(upper)) {
+      return (
+        <span key={index} className="text-[#0000ff] dark:text-[#569cd6] font-semibold">
+          {token}
+        </span>
+      );
+    }
+    // Types -> VS Code Teal / Mint (#4ec9b0 in dark, #267f99 in light)
+    if (SQL_TYPES.has(upper)) {
+      return (
+        <span key={index} className="text-[#267f99] dark:text-[#4ec9b0] font-medium">
+          {token}
+        </span>
+      );
+    }
+    // Functions -> VS Code Yellow / Gold (#dcdcaa in dark, #795e26 in light)
+    if (SQL_FUNCTIONS.has(upper)) {
+      return (
+        <span key={index} className="text-[#795e26] dark:text-[#dcdcaa] font-medium">
+          {token}
+        </span>
+      );
+    }
+    // Operators -> VS Code Purple (#c586c0 in dark, #af00db in light)
+    if (/^[=<>!+\-*/%]+$/.test(token)) {
+      return (
+        <span key={index} className="text-[#af00db] dark:text-[#c586c0]">
+          {token}
+        </span>
+      );
+    }
+    // Regular identifier or whitespace
+    return <span key={index}>{token}</span>;
+  });
+}
 
 export const SqlEditor: React.FC<SqlEditorProps> = ({
   tabs,
@@ -63,11 +166,14 @@ export const SqlEditor: React.FC<SqlEditorProps> = ({
   attributesCount,
   onToggleSchema,
   isSchemaOpen = false,
-  isFocusMode = false
+  isFocusMode = false,
+  syntaxHighlighting = true,
+  onToggleSyntaxHighlighting
 }) => {
   const currentTab = tabs.find(t => t.id === activeTabId) || tabs[0];
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lineNumbersRef = useRef<HTMLPreElement>(null);
+  const highlightRef = useRef<HTMLPreElement>(null);
 
   const [fontSize, setFontSize] = useState<number>(14);
   const [wordWrap, setWordWrap] = useState<boolean>(false);
@@ -127,12 +233,23 @@ export const SqlEditor: React.FC<SqlEditorProps> = ({
     }
   };
 
-  // Synchronize line numbers scrolling with textarea
+  // Synchronize line numbers and syntax overlay scrolling with textarea
   const handleScroll = () => {
-    if (textareaRef.current && lineNumbersRef.current) {
-      lineNumbersRef.current.scrollTop = textareaRef.current.scrollTop;
+    if (textareaRef.current) {
+      if (lineNumbersRef.current) {
+        lineNumbersRef.current.scrollTop = textareaRef.current.scrollTop;
+      }
+      if (highlightRef.current) {
+        highlightRef.current.scrollTop = textareaRef.current.scrollTop;
+        highlightRef.current.scrollLeft = textareaRef.current.scrollLeft;
+      }
     }
   };
+
+  const highlightedContent = useMemo(() => {
+    if (!syntaxHighlighting || !currentTab?.query) return null;
+    return highlightSqlToReact(currentTab.query);
+  }, [syntaxHighlighting, currentTab?.query]);
 
   // Keyboard shortcut Ctrl+Enter to execute, Ctrl+Z for undo, Ctrl+Y for redo
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -417,6 +534,22 @@ export const SqlEditor: React.FC<SqlEditorProps> = ({
             <WrapText className="w-3.5 h-3.5" />
           </button>
 
+          {/* VS Code Syntax Color Toggle */}
+          {onToggleSyntaxHighlighting && (
+            <button
+              onClick={() => onToggleSyntaxHighlighting(!syntaxHighlighting)}
+              className={`p-1 rounded border transition-colors flex items-center gap-1 ${
+                syntaxHighlighting 
+                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300' 
+                  : 'border-neutral-300 dark:border-neutral-700 hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-500'
+              }`}
+              title={syntaxHighlighting ? 'VS Code Syntax Colors: ON (Click to disable)' : 'VS Code Syntax Colors: OFF (Click to enable)'}
+            >
+              <Palette className="w-3.5 h-3.5 text-blue-500" />
+              <span className="text-[10px] hidden sm:inline font-medium">Color</span>
+            </button>
+          )}
+
           {/* Font Size Adjuster */}
           <div className="flex items-center border border-neutral-300 dark:border-neutral-700 rounded overflow-hidden">
             <button
@@ -488,7 +621,7 @@ export const SqlEditor: React.FC<SqlEditorProps> = ({
         ))}
       </div>
 
-      {/* Code Textarea with Line Numbers */}
+      {/* Code Textarea with Line Numbers and VS Code Syntax Highlighting */}
       <div className="relative flex-1 flex overflow-hidden font-mono min-h-[160px]">
         {/* Line Numbers Column */}
         <pre 
@@ -497,23 +630,44 @@ export const SqlEditor: React.FC<SqlEditorProps> = ({
           style={{ fontSize: `${fontSize}px`, minWidth: '40px' }}
         >{lineNumbersText}</pre>
 
-        {/* Text Area */}
-        <textarea
-          ref={textareaRef}
-          value={currentTab?.query || ''}
-          onChange={(e) => handleQueryChange(e.target.value)}
-          onScroll={handleScroll}
-          onSelect={handleSelect}
-          onKeyDown={handleKeyDown}
-          placeholder="-- Write or paste your SQL / PostgreSQL query here
+        {/* Editor Area with Syntax Highlight Overlay and Textarea */}
+        <div className="relative flex-1 h-full overflow-hidden">
+          {syntaxHighlighting && (
+            <pre
+              ref={highlightRef}
+              aria-hidden="true"
+              className={`pointer-events-none absolute inset-0 m-0 p-3 leading-6 font-mono overflow-hidden select-none text-neutral-900 dark:text-neutral-100 ${
+                wordWrap ? 'whitespace-pre-wrap break-all' : 'whitespace-pre'
+              }`}
+              style={{ fontSize: `${fontSize}px` }}
+            >
+              {highlightedContent}
+              {'\n'}
+            </pre>
+          )}
+
+          {/* Interactive Text Area */}
+          <textarea
+            ref={textareaRef}
+            value={currentTab?.query || ''}
+            onChange={(e) => handleQueryChange(e.target.value)}
+            onScroll={handleScroll}
+            onSelect={handleSelect}
+            onKeyDown={handleKeyDown}
+            placeholder="-- Write or paste your SQL / PostgreSQL query here
 -- e.g. CREATE TABLE users (id INT, name STRING);
 -- Press Ctrl + Enter to execute, Ctrl + Z to Undo, Ctrl + Y to Redo"
-          spellCheck={false}
-          className={`flex-1 p-3 leading-6 bg-transparent text-neutral-900 dark:text-neutral-100 outline-none resize-none font-mono ${
-            wordWrap ? 'whitespace-pre-wrap' : 'whitespace-pre overflow-x-auto'
-          }`}
-          style={{ fontSize: `${fontSize}px` }}
-        />
+            spellCheck={false}
+            className={`absolute inset-0 m-0 p-3 leading-6 outline-none resize-none font-mono ${
+              syntaxHighlighting
+                ? 'bg-transparent text-transparent caret-neutral-900 dark:caret-white selection:bg-blue-500/30'
+                : 'bg-transparent text-neutral-900 dark:text-neutral-100 selection:bg-emerald-500/30'
+            } ${
+              wordWrap ? 'whitespace-pre-wrap break-all' : 'whitespace-pre overflow-auto'
+            }`}
+            style={{ fontSize: `${fontSize}px` }}
+          />
+        </div>
       </div>
 
       {/* Editor Footer Status Bar */}
@@ -522,6 +676,9 @@ export const SqlEditor: React.FC<SqlEditorProps> = ({
           <span>Lines: <strong className="font-mono text-neutral-700 dark:text-neutral-200">{linesCount}</strong></span>
           <span>Chars: <strong className="font-mono text-neutral-700 dark:text-neutral-200">{(currentTab?.query || '').length}</strong></span>
           <span className="hidden sm:inline">Shortcuts: <kbd className="px-1 py-0.5 bg-neutral-200 dark:bg-neutral-800 rounded font-mono text-[10px]">Ctrl+Enter</kbd> (Run) · <kbd className="px-1 py-0.5 bg-neutral-200 dark:bg-neutral-800 rounded font-mono text-[10px]">Ctrl+Z</kbd> (Undo)</span>
+          <span className="text-[10px] text-neutral-400">
+            Colors: <strong className={syntaxHighlighting ? 'text-blue-600 dark:text-blue-400 font-semibold' : 'text-neutral-500'}>{syntaxHighlighting ? 'VS Code (ON)' : 'OFF'}</strong>
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <button

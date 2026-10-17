@@ -11,7 +11,8 @@ import {
   CheckCircle2, 
   Sparkles,
   Bot,
-  AlertCircle
+  AlertCircle,
+  Palette
 } from 'lucide-react';
 import { StoredApiKey, GroqConfig } from '../types';
 import { groqService, DEFAULT_GROQ_MODELS } from '../services/groqService';
@@ -20,12 +21,16 @@ interface ProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfigUpdated: () => void;
+  syntaxHighlighting: boolean;
+  onToggleSyntaxHighlighting: (val: boolean) => void;
 }
 
 export const ProfileModal: React.FC<ProfileModalProps> = ({
   isOpen,
   onClose,
-  onConfigUpdated
+  onConfigUpdated,
+  syntaxHighlighting,
+  onToggleSyntaxHighlighting
 }) => {
   const [config, setConfig] = useState<GroqConfig>(() => groqService.getConfig());
   const [isAddingNew, setIsAddingNew] = useState(false);
@@ -136,6 +141,66 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
               <span>{feedback.message}</span>
             </div>
           )}
+
+          {/* Editor Formatting & VS Code Syntax Coloring */}
+          <div className="p-3.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-blue-100 dark:bg-blue-950/70 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                  <Palette className="w-3.5 h-3.5" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-neutral-900 dark:text-neutral-100 text-xs">
+                    VS Code Syntax Color Formatting
+                  </h4>
+                  <p className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                    Automatically colorizes SQL keywords, functions, strings, and types like VS Code
+                  </p>
+                </div>
+              </div>
+
+              {/* Toggle Switch */}
+              <button
+                type="button"
+                onClick={() => onToggleSyntaxHighlighting(!syntaxHighlighting)}
+                className={`relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  syntaxHighlighting ? 'bg-emerald-600' : 'bg-neutral-300 dark:bg-neutral-700'
+                }`}
+                role="switch"
+                aria-checked={syntaxHighlighting}
+                title={syntaxHighlighting ? "Turn off syntax coloring" : "Turn on syntax coloring"}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                    syntaxHighlighting ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Live Syntax Preview */}
+            <div className="p-2.5 rounded-lg bg-neutral-900 font-mono text-[11px] border border-neutral-800 flex items-center gap-1.5 overflow-x-auto select-none">
+              <span className="text-neutral-500 text-[10px] uppercase font-sans tracking-wider shrink-0">Preview:</span>
+              {syntaxHighlighting ? (
+                <div className="flex items-center gap-1 whitespace-nowrap">
+                  <span className="text-blue-400 font-semibold">SELECT</span>
+                  <span className="text-neutral-200">id, name,</span>
+                  <span className="text-amber-300 font-medium">COUNT</span>
+                  <span className="text-neutral-200">(*)</span>
+                  <span className="text-blue-400 font-semibold">FROM</span>
+                  <span className="text-neutral-200">users</span>
+                  <span className="text-blue-400 font-semibold">WHERE</span>
+                  <span className="text-neutral-200">status =</span>
+                  <span className="text-emerald-400">'active'</span>
+                  <span className="text-neutral-500 italic">-- comments</span>
+                </div>
+              ) : (
+                <span className="text-neutral-400 whitespace-nowrap">
+                  SELECT id, name, COUNT(*) FROM users WHERE status = 'active' -- comments (Plain Text)
+                </span>
+              )}
+            </div>
+          </div>
 
           {/* Active Model Selector */}
           <div className="p-3.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950 space-y-2">
