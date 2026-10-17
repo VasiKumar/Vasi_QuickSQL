@@ -9,7 +9,7 @@ on:
 
 jobs:
   build-apk:
-    name: Build QuickSQL Android APK
+    name: Build QuickSQL Full Standalone Android APK
     runs-on: ubuntu-latest
 
     steps:
@@ -46,28 +46,32 @@ jobs:
         run: |
           npm install --legacy-peer-deps --no-audit
 
-      - name: Generate Android Native Project
+      - name: Generate Android Native Project (Expo Prebuild)
         working-directory: react-native-quicksql
         run: |
           npx --yes expo prebuild --platform android --clean --no-install
           echo "sdk.dir=/usr/local/lib/android/sdk" > android/local.properties
+          # Ensure standalone offline bundle embedding in both debug and release
+          sed -i 's/bundleCommand = "export:embed"/bundleCommand = "export:embed"\n    bundleInDebug = true/' android/app/build.gradle
           chmod +x android/gradlew
 
-      - name: Build Android Debug APK
+      - name: Build Full Standalone Android APK (Release & Debug)
         working-directory: react-native-quicksql/android
         env:
           GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=1024m -Dorg.gradle.daemon=false"
         run: |
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew assembleRelease --no-daemon --stacktrace
 
-      - name: Verify Generated APK
+      - name: Verify Generated Standalone APK
         working-directory: react-native-quicksql/android
         run: |
-          ls -lh app/build/outputs/apk/debug/
+          mkdir -p ../dist-apk
+          cp app/build/outputs/apk/release/*-release.apk ../dist-apk/QuickSQL-Standalone.apk
+          ls -lh ../dist-apk/
 
-      - name: Upload APK to GitHub Artifacts
+      - name: Upload Full Standalone APK to GitHub Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: QuickSQL-Android-APK
-          path: react-native-quicksql/android/app/build/outputs/apk/debug/*.apk
+          name: QuickSQL-Full-Standalone-APK
+          path: react-native-quicksql/dist-apk/QuickSQL-Standalone.apk
           retention-days: 30
