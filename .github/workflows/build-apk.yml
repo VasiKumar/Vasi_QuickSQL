@@ -51,8 +51,8 @@ jobs:
         run: |
           npx --yes expo prebuild --platform android --clean --no-install
           echo "sdk.dir=/usr/local/lib/android/sdk" > android/local.properties
-          # Ensure standalone offline bundle embedding in both debug and release
-          sed -i 's/bundleCommand = "export:embed"/bundleCommand = "export:embed"\n    bundleInDebug = true/' android/app/build.gradle
+          # Ensure standalone offline bundling by setting debuggableVariants = []
+          sed -i 's/bundleCommand = "export:embed"/bundleCommand = "export:embed"\n    debuggableVariants = []/' android/app/build.gradle
           chmod +x android/gradlew
 
       - name: Build Full Standalone Android APK (Release & Debug)
@@ -66,7 +66,7 @@ jobs:
         working-directory: react-native-quicksql/android
         run: |
           mkdir -p ../dist-apk
-          cp app/build/outputs/apk/release/*-release.apk ../dist-apk/QuickSQL-Standalone.apk
+          cp app/build/outputs/apk/release/*.apk ../dist-apk/QuickSQL-Standalone.apk
           ls -lh ../dist-apk/
 
       - name: Upload Full Standalone APK to GitHub Artifacts
