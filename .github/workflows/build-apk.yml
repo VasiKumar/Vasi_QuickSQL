@@ -46,13 +46,10 @@ jobs:
         run: |
           npm install --legacy-peer-deps --no-audit
 
-      - name: Generate Android Native Project if needed
+      - name: Generate Android Native Project
         working-directory: react-native-quicksql
         run: |
-          if [ ! -f "android/gradlew" ]; then
-            npx --yes expo prebuild --platform android --no-install --clean
-          fi
-          mkdir -p android
+          npx --yes expo prebuild --platform android --clean --no-install
           echo "sdk.dir=/usr/local/lib/android/sdk" > android/local.properties
           chmod +x android/gradlew
 
